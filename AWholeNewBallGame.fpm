@@ -1,0 +1,81 @@
+" bmp.fpm" L
+
+30 CONSTANT FieldWidth
+18 CONSTANT FieldHeight
+FieldWidth FieldHeight * CONSTANT FieldSize
+CREATE GameField[] FieldSize ALLOT
+{ 0 GameField[] FieldSize FILL }
+
+0 CONSTANT TileSpace
+1 CONSTANT TileLeftSlashRemovable
+2 CONSTANT TileRightSlashRemovable
+3 CONSTANT TileLeftSlash
+4 CONSTANT TileRightSlash
+5 CONSTANT TileGoBack
+6 CONSTANT TileGoRight
+7 CONSTANT TileGoDown
+8 CONSTANT TileGoLeft
+9 CONSTANT TileGoUp
+10 CONSTANT TileSpaceBlocked
+11 CONSTANT TileSlime
+12 CONSTANT TileGoRandom
+13 CONSTANT TileJump
+14 CONSTANT TileSpeedUp
+15 CONSTANT TileSlowDown
+16 CONSTANT TileGrass
+17 CONSTANT TileEnergy
+18 CONSTANT TileTrap
+19 CONSTANT TileWall
+20 CONSTANT TilesCount
+
+16 CONSTANT SpriteWidth
+16 CONSTANT SpriteHeight
+CREATE Sprites[] TilesCount CELLS ALLOT
+{
+ 0
+ " bmp/TileSpace.bmp" LOAD-BMP OVER 4 * Sprites[] + ! 1+
+ " bmp/TileLeftSlashRemovable.bmp" LOAD-BMP OVER 4 * Sprites[] + ! 1+
+ " bmp/TileRightSlashRemovable.bmp" LOAD-BMP OVER 4 * Sprites[] + ! 1+
+ " bmp/TileLeftSlash.bmp" LOAD-BMP OVER 4 * Sprites[] + ! 1+
+ " bmp/TileRightSlash.bmp" LOAD-BMP OVER 4 * Sprites[] + ! 1+
+ " bmp/TileGoBack.bmp" LOAD-BMP OVER 4 * Sprites[] + ! 1+
+ " bmp/TileGoRight.bmp" LOAD-BMP OVER 4 * Sprites[] + ! 1+
+ " bmp/TileGoDown.bmp" LOAD-BMP OVER 4 * Sprites[] + ! 1+
+ " bmp/TileGoLeft.bmp" LOAD-BMP OVER 4 * Sprites[] + ! 1+
+ " bmp/TileGoUp.bmp" LOAD-BMP OVER 4 * Sprites[] + ! 1+
+ " bmp/TileSpaceBlocked.bmp" LOAD-BMP OVER 4 * Sprites[] + ! 1+
+ " bmp/TileSlime.bmp" LOAD-BMP OVER 4 * Sprites[] + ! 1+
+ " bmp/TileGoRandom.bmp" LOAD-BMP OVER 4 * Sprites[] + ! 1+
+ " bmp/TileJump.bmp" LOAD-BMP OVER 4 * Sprites[] + ! 1+
+ " bmp/TileSpeedUp.bmp" LOAD-BMP OVER 4 * Sprites[] + ! 1+
+ " bmp/TileSlowDown.bmp" LOAD-BMP OVER 4 * Sprites[] + ! 1+
+ " bmp/TileGrass.bmp" LOAD-BMP OVER 4 * Sprites[] + ! 1+
+ " bmp/TileEnergy.bmp" LOAD-BMP OVER 4 * Sprites[] + ! 1+
+ " bmp/TileTrap.bmp" LOAD-BMP OVER 4 * Sprites[] + ! 1+
+ " bmp/TileWall.bmp" LOAD-BMP OVER 4 * Sprites[] + ! 1+
+ DROP
+}
+
+50 CONSTANT FieldOffsetX
+50 CONSTANT FieldOffsetY
+
+: DrawField
+ FieldHeight 0 DO
+   FieldWidth 0 DO
+   Sprites[] GameField[] IJ + C@ -TH @
+   I SpriteWidth * FieldOffsetX +
+   J SpriteHeight * FieldOffsetY +
+   SHOW-BMP
+  LOOP
+ LOOP
+;
+
+: Test
+ GameField[]
+ FieldSize SHR 0 DO
+  I TilesCount MOD OVER C!
+  1+
+ LOOP
+ DROP
+ DrawField
+;
