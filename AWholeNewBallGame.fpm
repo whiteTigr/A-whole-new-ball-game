@@ -22,6 +22,8 @@ VARIABLE BallY
 VARIABLE BallDX
 VARIABLE BallDY
 
+VARIABLE EnergyLeft
+
 0 CONSTANT TileSpace // A
 1 CONSTANT TileLeftSlashRemovable // B
 2 CONSTANT TileRightSlashRemovable // C
@@ -137,13 +139,15 @@ EndSpriteLoading
  DrawBall
 ;
 
-: StartFillingGameField GameField[] ;
+: StartFillingGameField 0 EnergyLeft ! GameField[] ;
 : EndFillingGameField DROP ;
 : Field, // index str --> index+fieldWidth
  DUP IF // not empty string
   OVER // index str index
   BEGIN
-   OVER C@ " A" C@ - OVER C!
+   OVER C@ " A" C@ - // index str index tile
+   DUP TileEnergy = IF EnergyLeft @ 1+ EnergyLeft ! THEN
+   OVER C!
    1+ SWAP 1+ SWAP
   OVER C@ NOT UNTIL
   DROP
@@ -154,7 +158,7 @@ EndSpriteLoading
 
 : LevelA
  StartFillingGameField
- " AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" Field,
+ " AAAAAAAAAAAAAABAAAAAAAAAAAAAAA" Field,
  " AAAAAAAAAAAAATATAAAAAAAAAAAAAA" Field,
  " AAAAAAAAAAAAATRTAAAAAAAAAAAAAA" Field,
  " AAAAAAAAAAAAATRTAAAAAAAAAAAAAA" Field,
@@ -162,7 +166,7 @@ EndSpriteLoading
  " AAAAAAAAAAAAATRTAAAAAAAAAAAAAA" Field,
  " AAAAAAAAAAAAATRTAAAAAAAAAAAAAA" Field,
  " AAAAATTTTTTTTTRTTTTTTTTTAAAAAA" Field,
- " AAAAAARRRRRRRRRRRRRRRRRAAAAAAA" Field,
+ " CAAAAARRRRRRRRRRRRRRRRRAAAAAAA" Field,
  " AAAAATTTTTTTTTRTTTTTTTTTAAAAAA" Field,
  " AAAAAAAAAAAAATRTAAAAAAAAAAAAAA" Field,
  " AAAAAAAAAAAAATRTAAAAAAAAAAAAAA" Field,
@@ -171,7 +175,7 @@ EndSpriteLoading
  " AAAAAAAAAAAAATRTAAAAAAAAAAAAAA" Field,
  " AAAAAAAAAAAAATRTAAAAAAAAAAAAAA" Field,
  " AAAAAAAAAAAAATATAAAAAAAAAAAAAA" Field,
- " AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" Field,
+ " BAAAAAAAAAAAAACAAAAAAAAAAAAAAA" Field,
  EndFillingGameField
 ;
 
@@ -213,6 +217,14 @@ VARIABLE NewBallY
   BallDX @ BallDY @ NEGATE BallDX ! NEGATE BallDY !
  THEN 
 
+ DUP TileEnergy = IF
+  TileSpace
+  GameField[] 
+   BallX @ 16 / + 
+   BallY @ 16 / FieldWidth * + C!
+  EnergyLeft @ 1 - EnergyLeft !
+ THEN
+
  DROP
 ;
 
@@ -249,13 +261,17 @@ VARIABLE NewBallY
  NewBallY @ BallY !
 ;
 
-: Test
+: StartGame
  7 BallX !
  7 BallY !
  1 BallDX !
  0 BallDY !
- LevelTest
- DrawGameField 
+ LevelA
+;
+
+: Test
+ StartGame
+ DrawGameField
  BEGIN
   BallX @ 16 / BallY @ 16 / 
    OVER    OVER    DrawTile
@@ -272,10 +288,12 @@ VARIABLE NewBallY
    OVER 1- OVER    DrawTile
    OVER    OVER 1- DrawTile
    OVER 1+ OVER    DrawTile
-   OVER    OVER 1+ DrawTile  DrawBall
+   OVER    OVER 1+ DrawTile  
   DROP DROP
+  DrawBall
   0 0 GOTOXY
-  " DEPTH = " PRINT DEPTH .
+  " DEPTH = " PRINT DEPTH . CR
+  " ENERGY LEFT = " PRINT EnergyLeft @ . 
   $
  AGAIN
 ;
