@@ -5,7 +5,15 @@
 
 30 CONSTANT FieldWidth
 18 CONSTANT FieldHeight
+
+16 CONSTANT SpriteWidth
+16 CONSTANT SpriteHeight
+
 FieldWidth FieldHeight * CONSTANT FieldSize
+
+FieldWidth SpriteWidth * CONSTANT FieldPixelWidth
+FieldHeight SpriteHeight * CONSTANT FieldPixelHeight
+
 CREATE GameField[] FieldSize ALLOT
 0 GameField[] FieldSize FILL
 
@@ -38,8 +46,6 @@ VARIABLE BallDY
 21 CONSTANT TileLevelStart // V
 22 CONSTANT TilesCount
 
-16 CONSTANT SpriteWidth
-16 CONSTANT SpriteHeight
 CREATE Sprites[] TilesCount CELLS ALLOT
 : Sprite, // index --> index+1
  LOAD-BMP OVER 4 * Sprites[] + ! 1+
@@ -81,7 +87,9 @@ EndSpriteLoading
 : EXIT RDROP ;
 
 : DrawTile // x y -->
+ DUP 0 < IF DROP DROP EXIT THEN
  DUP FieldHeight 1- > IF DROP DROP EXIT THEN
+ OVER 0 < IF DROP DROP EXIT THEN
  OVER FieldWidth 1- > IF DROP DROP EXIT THEN
  OVER OVER FieldWidth * + GameField[] + C@ Sprites[] SWAP -TH @ // x y addr
  ROT SpriteWidth * FieldOffsetX +
@@ -167,10 +175,45 @@ EndSpriteLoading
  EndFillingGameField
 ;
 
+: LevelTest
+ StartFillingGameField
+ " CABAABAAAAAAAAAAAAAAAAAAAAAAAB" Field,
+ " AAAAAAAAAAAAAAAAAAAAAAAAAAAABA" Field,
+ " BABAACAAAAAAAAAAAAAAAAAAAAABAA" Field,
+ " AACAAAAAAAAAAAAAAAAAAAAAAABAAA" Field,
+ " AAACAAAAAAAAAAAAAAAAAAAAABAAAA" Field,
+ " AAAACAAAAAAAAAAAAAAAAAAABAAAAA" Field,
+ " AAAAACAAAAAAAAAAAAAAAAABAAAAAA" Field,
+ " AAAAAACAAAAAAAAAAAAAAABAAAAAAA" Field,
+ " AAAAAAACAAAAAAAAAAAAABAAAAAAAA" Field,
+ " AAAAAAAAAAAAAAAAAAAAACAAAAAAAA" Field,
+ " AAAAAAABAAAAAAAAAAAAAACAAAAAAA" Field,
+ " AAAAAABAAAAAAAAAAAAAAAACAAAAAA" Field,
+ " AAAAABAAAAAAAAAAAAAAAAAACAAAAA" Field,
+ " AAAABAAAAAAAAAAAAAAAAAAAACAAAA" Field,
+ " AAABAAAAAAAAAAAAAAAAAAAAAACAAA" Field,
+ " AABAAAAAAAAAAAAAAAAAAAAAAAACAA" Field,
+ " ABAAAAAAAAAAAAAAAAAAAAAAAAAACA" Field,
+ " BAAAAAAAAAAAAAAAAAAAAAAAAAAAAC" Field,
+ EndFillingGameField
+;
+
 VARIABLE NewBallX
 VARIABLE NewBallY
 
 : CenterOfTileActions
+ GameField[] 
+  BallX @ 16 / + 
+  BallY @ 16 / FieldWidth * + C@ // tile
+ DUP TileLeftSlashRemovable = OVER TileLeftSlash = OR IF
+  BallDX @ BallDY @ BallDX ! BallDY !
+ THEN 
+
+ DUP TileRightSlashRemovable = OVER TileRightSlash = OR IF
+  BallDX @ BallDY @ NEGATE BallDX ! NEGATE BallDY !
+ THEN 
+
+ DROP
 ;
 
 : GameStep
@@ -211,16 +254,28 @@ VARIABLE NewBallY
  7 BallY !
  1 BallDX !
  0 BallDY !
+ LevelTest
  DrawGameField 
  BEGIN
-  BallX @ 16 / BallY @ 16 / DrawTile
-  BallX @ 4 + 16 / BallY @ 16 / DrawTile
-  BallX @ 16 / BallY @ 4 + 16 / DrawTile
-  GameStep
-  BallX @ 16 / BallY @ 16 / DrawTile
-  BallX @ 4 + 16 / BallY @ 16 / DrawTile
-  BallX @ 16 / BallY @ 4 + 16 / DrawTile
-  DrawBall
+  BallX @ 16 / BallY @ 16 / 
+   OVER    OVER    DrawTile
+   OVER 1- OVER    DrawTile
+   OVER    OVER 1- DrawTile
+   OVER 1+ OVER    DrawTile
+   OVER    OVER 1+ DrawTile
+  DROP DROP
+  2 0 DO
+   GameStep
+  LOOP
+  BallX @ 16 / BallY @ 16 / 
+   OVER    OVER    DrawTile
+   OVER 1- OVER    DrawTile
+   OVER    OVER 1- DrawTile
+   OVER 1+ OVER    DrawTile
+   OVER    OVER 1+ DrawTile  DrawBall
+  DROP DROP
+  0 0 GOTOXY
+  " DEPTH = " PRINT DEPTH .
   $
  AGAIN
 ;
