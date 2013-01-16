@@ -1,10 +1,18 @@
 " bmp.fpm" L
 
+50 CONSTANT FieldOffsetX
+50 CONSTANT FieldOffsetY
+
 30 CONSTANT FieldWidth
 18 CONSTANT FieldHeight
 FieldWidth FieldHeight * CONSTANT FieldSize
 CREATE GameField[] FieldSize ALLOT
-{ 0 GameField[] FieldSize FILL }
+0 GameField[] FieldSize FILL
+
+VARIABLE BallX
+VARIABLE BallY
+VARIABLE BallDX
+VARIABLE BallDY
 
 0 CONSTANT TileSpace // A
 1 CONSTANT TileLeftSlashRemovable // B
@@ -26,7 +34,9 @@ CREATE GameField[] FieldSize ALLOT
 17 CONSTANT TileEnergy // R
 18 CONSTANT TileTrap // S
 19 CONSTANT TileWall // T
-20 CONSTANT TilesCount
+20 CONSTANT TileEraser // U
+21 CONSTANT TileLevelStart // V
+22 CONSTANT TilesCount
 
 16 CONSTANT SpriteWidth
 16 CONSTANT SpriteHeight
@@ -58,23 +68,39 @@ StartSpriteLoading
  " bmp/TileEnergy.bmp" Sprite,
  " bmp/TileTrap.bmp" Sprite,
  " bmp/TileWall.bmp" Sprite,
+ " bmp/TileEraser.bmp" Sprite,
+ " bmp/TileLevelStart.bmp" Sprite,
 EndSpriteLoading
 
-50 CONSTANT FieldOffsetX
-50 CONSTANT FieldOffsetY
+: DrawSprite // x y index -->
+ Sprites[] SWAP -TH @ 
+ ROT ROT // addr x y
+ SHOW-BMP
+;
+
+: EXIT RDROP ;
+
+: DrawTile // x y -->
+ DUP FieldHeight 1- > IF DROP DROP EXIT THEN
+ OVER FieldWidth 1- > IF DROP DROP EXIT THEN
+ OVER OVER FieldWidth * + GameField[] + C@ Sprites[] SWAP -TH @ // x y addr
+ ROT SpriteWidth * FieldOffsetX +
+ ROT SpriteHeight * FieldOffsetY +
+ SHOW-BMP
+;
 
 : DrawBorder
- FieldOffsetX 2 - FieldOffsetY 2 - FieldWidth SpriteWidth * 4 + WHITE HLINE
- FieldOffsetX 1 - FieldOffsetY 1 - FieldWidth SpriteWidth * 2 + WHITE HLINE
+ FieldOffsetX 2 - FieldOffsetY 1 - FieldWidth SpriteWidth * 4 + WHITE HLINE
+ FieldOffsetX 1 - FieldOffsetY     FieldWidth SpriteWidth * 2 + WHITE HLINE
 
- FieldOffsetX 2 - FieldHeight SpriteHeight * FieldOffsetY + 2 + FieldWidth SpriteWidth * 5 + WHITE HLINE
- FieldOffsetX 1 - FieldHeight SpriteHeight * FieldOffsetY + 1 + FieldWidth SpriteWidth * 3 + WHITE HLINE
+ FieldOffsetX 2 - FieldHeight SpriteHeight * FieldOffsetY + 1 + FieldWidth SpriteWidth * 4 + WHITE HLINE
+ FieldOffsetX 1 - FieldHeight SpriteHeight * FieldOffsetY +     FieldWidth SpriteWidth * 2 + WHITE HLINE
 
- FieldOffsetX 2 - FieldOffsetY 2 - FieldHeight SpriteHeight * 4 + WHITE VLINE
- FieldOffsetX 1 - FieldOffsetY 1 - FieldHeight SpriteHeight * 2 + WHITE VLINE
+ FieldOffsetX 2 - FieldOffsetY 1 - FieldHeight SpriteHeight * 3 + WHITE VLINE
+ FieldOffsetX 1 - FieldOffsetY     FieldHeight SpriteHeight * 1 + WHITE VLINE
 
- FieldWidth SpriteWidth * FieldOffsetX + 2 + FieldOffsetY 2 - FieldHeight SpriteHeight * 4 + WHITE VLINE
- FieldWidth SpriteWidth * FieldOffsetX + 1 + FieldOffsetY 1 - FieldHeight SpriteHeight * 2 + WHITE VLINE
+ FieldWidth SpriteWidth * FieldOffsetX + 1 + FieldOffsetY 1 - FieldHeight SpriteHeight * 3 + WHITE VLINE
+ FieldWidth SpriteWidth * FieldOffsetX +     FieldOffsetY     FieldHeight SpriteHeight * 1 + WHITE VLINE
 ;
 
 : DrawField
@@ -86,17 +112,21 @@ EndSpriteLoading
    SHOW-BMP
   LOOP
  LOOP
- DrawBorder
+ FieldOffsetX FieldOffsetY TileLevelStart DrawSprite
 ;
 
-: Test
- GameField[]
- FieldSize SHR 0 DO
-  I TilesCount MOD OVER C!
-  1+
+: DrawBall
+ FieldOffsetX BallX @ + FieldOffsetY BallY @ +
+ 4 0 DO
+  OVER OVER I + 4 WHITE HLINE
  LOOP
- DROP
+ DROP DROP
+;
+
+: DrawGameField
+ DrawBorder
  DrawField
+ DrawBall
 ;
 
 : StartFillingGameField GameField[] ;
@@ -113,6 +143,7 @@ EndSpriteLoading
  DROP
  FieldWidth +
 ;
+
 : LevelA
  StartFillingGameField
  " AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" Field,
@@ -134,4 +165,62 @@ EndSpriteLoading
  " AAAAAAAAAAAAATATAAAAAAAAAAAAAA" Field,
  " AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" Field,
  EndFillingGameField
+;
+
+VARIABLE NewBallX
+VARIABLE NewBallY
+
+: CenterOfTileActions
+;
+
+: GameStep
+ BallX @ BallDX @ + NewBallX !
+ BallY @ BallDY @ + NewBallY !
+
+ NewBallX @ 0 < IF 
+  1 BallDX !
+  1 NewBallX !
+ THEN
+
+ NewBallX @ FieldWidth SpriteWidth * 3 - > IF
+  -1 BallDX !
+  FieldWidth SpriteWidth * 4 - NewBallX !
+ THEN  
+
+ NewBallY @ 0 < IF 
+  1 BallDY !
+  1 NewBallY !
+ THEN
+
+ NewBallY @ FieldHeight SpriteHeight * 3 - > IF
+  -1 BallDY !
+  FieldHeight SpriteHeight * 4 - NewBallY !
+ THEN
+
+ NewBallX @ 15 AND 7 =
+ NewBallY @ 15 AND 7 = AND IF
+  CenterOfTileActions
+ THEN
+
+ NewBallX @ BallX !
+ NewBallY @ BallY !
+;
+
+: Test
+ 7 BallX !
+ 7 BallY !
+ 1 BallDX !
+ 0 BallDY !
+ DrawGameField 
+ BEGIN
+  BallX @ 16 / BallY @ 16 / DrawTile
+  BallX @ 4 + 16 / BallY @ 16 / DrawTile
+  BallX @ 16 / BallY @ 4 + 16 / DrawTile
+  GameStep
+  BallX @ 16 / BallY @ 16 / DrawTile
+  BallX @ 4 + 16 / BallY @ 16 / DrawTile
+  BallX @ 16 / BallY @ 4 + 16 / DrawTile
+  DrawBall
+  $
+ AGAIN
 ;
