@@ -6,58 +6,76 @@ FieldWidth FieldHeight * CONSTANT FieldSize
 CREATE GameField[] FieldSize ALLOT
 { 0 GameField[] FieldSize FILL }
 
-0 CONSTANT TileSpace
-1 CONSTANT TileLeftSlashRemovable
-2 CONSTANT TileRightSlashRemovable
-3 CONSTANT TileLeftSlash
-4 CONSTANT TileRightSlash
-5 CONSTANT TileGoBack
-6 CONSTANT TileGoRight
-7 CONSTANT TileGoDown
-8 CONSTANT TileGoLeft
-9 CONSTANT TileGoUp
-10 CONSTANT TileSpaceBlocked
-11 CONSTANT TileSlime
-12 CONSTANT TileGoRandom
-13 CONSTANT TileJump
-14 CONSTANT TileSpeedUp
-15 CONSTANT TileSlowDown
-16 CONSTANT TileGrass
-17 CONSTANT TileEnergy
-18 CONSTANT TileTrap
-19 CONSTANT TileWall
+0 CONSTANT TileSpace // A
+1 CONSTANT TileLeftSlashRemovable // B
+2 CONSTANT TileRightSlashRemovable // C
+3 CONSTANT TileLeftSlash // D
+4 CONSTANT TileRightSlash // E
+5 CONSTANT TileGoBack // F
+6 CONSTANT TileGoRight // G
+7 CONSTANT TileGoDown // H
+8 CONSTANT TileGoLeft // I
+9 CONSTANT TileGoUp // J
+10 CONSTANT TileSpaceBlocked // K
+11 CONSTANT TileSlime // L
+12 CONSTANT TileGoRandom // M
+13 CONSTANT TileJump // N
+14 CONSTANT TileSpeedUp // O
+15 CONSTANT TileSlowDown // P
+16 CONSTANT TileGrass // Q
+17 CONSTANT TileEnergy // R
+18 CONSTANT TileTrap // S
+19 CONSTANT TileWall // T
 20 CONSTANT TilesCount
 
 16 CONSTANT SpriteWidth
 16 CONSTANT SpriteHeight
 CREATE Sprites[] TilesCount CELLS ALLOT
-{
- 0
- " bmp/TileSpace.bmp" LOAD-BMP OVER 4 * Sprites[] + ! 1+
- " bmp/TileLeftSlashRemovable.bmp" LOAD-BMP OVER 4 * Sprites[] + ! 1+
- " bmp/TileRightSlashRemovable.bmp" LOAD-BMP OVER 4 * Sprites[] + ! 1+
- " bmp/TileLeftSlash.bmp" LOAD-BMP OVER 4 * Sprites[] + ! 1+
- " bmp/TileRightSlash.bmp" LOAD-BMP OVER 4 * Sprites[] + ! 1+
- " bmp/TileGoBack.bmp" LOAD-BMP OVER 4 * Sprites[] + ! 1+
- " bmp/TileGoRight.bmp" LOAD-BMP OVER 4 * Sprites[] + ! 1+
- " bmp/TileGoDown.bmp" LOAD-BMP OVER 4 * Sprites[] + ! 1+
- " bmp/TileGoLeft.bmp" LOAD-BMP OVER 4 * Sprites[] + ! 1+
- " bmp/TileGoUp.bmp" LOAD-BMP OVER 4 * Sprites[] + ! 1+
- " bmp/TileSpaceBlocked.bmp" LOAD-BMP OVER 4 * Sprites[] + ! 1+
- " bmp/TileSlime.bmp" LOAD-BMP OVER 4 * Sprites[] + ! 1+
- " bmp/TileGoRandom.bmp" LOAD-BMP OVER 4 * Sprites[] + ! 1+
- " bmp/TileJump.bmp" LOAD-BMP OVER 4 * Sprites[] + ! 1+
- " bmp/TileSpeedUp.bmp" LOAD-BMP OVER 4 * Sprites[] + ! 1+
- " bmp/TileSlowDown.bmp" LOAD-BMP OVER 4 * Sprites[] + ! 1+
- " bmp/TileGrass.bmp" LOAD-BMP OVER 4 * Sprites[] + ! 1+
- " bmp/TileEnergy.bmp" LOAD-BMP OVER 4 * Sprites[] + ! 1+
- " bmp/TileTrap.bmp" LOAD-BMP OVER 4 * Sprites[] + ! 1+
- " bmp/TileWall.bmp" LOAD-BMP OVER 4 * Sprites[] + ! 1+
- DROP
-}
+: Sprite, // index --> index+1
+ LOAD-BMP OVER 4 * Sprites[] + ! 1+
+;
+: StartSpriteLoading 0 ;
+: EndSpriteLoading DROP ;
+
+StartSpriteLoading
+ " bmp/TileSpace.bmp" Sprite,
+ " bmp/TileLeftSlashRemovable.bmp" Sprite,
+ " bmp/TileRightSlashRemovable.bmp" Sprite,
+ " bmp/TileLeftSlash.bmp" Sprite,
+ " bmp/TileRightSlash.bmp" Sprite,
+ " bmp/TileGoBack.bmp" Sprite,
+ " bmp/TileGoRight.bmp" Sprite,
+ " bmp/TileGoDown.bmp" Sprite,
+ " bmp/TileGoLeft.bmp" Sprite,
+ " bmp/TileGoUp.bmp" Sprite,
+ " bmp/TileSpaceBlocked.bmp" Sprite,
+ " bmp/TileSlime.bmp" Sprite,
+ " bmp/TileGoRandom.bmp" Sprite,
+ " bmp/TileJump.bmp" Sprite,
+ " bmp/TileSpeedUp.bmp" Sprite,
+ " bmp/TileSlowDown.bmp" Sprite,
+ " bmp/TileGrass.bmp" Sprite,
+ " bmp/TileEnergy.bmp" Sprite,
+ " bmp/TileTrap.bmp" Sprite,
+ " bmp/TileWall.bmp" Sprite,
+EndSpriteLoading
 
 50 CONSTANT FieldOffsetX
 50 CONSTANT FieldOffsetY
+
+: DrawBorder
+ FieldOffsetX 2 - FieldOffsetY 2 - FieldWidth SpriteWidth * 4 + WHITE HLINE
+ FieldOffsetX 1 - FieldOffsetY 1 - FieldWidth SpriteWidth * 2 + WHITE HLINE
+
+ FieldOffsetX 2 - FieldHeight SpriteHeight * FieldOffsetY + 2 + FieldWidth SpriteWidth * 5 + WHITE HLINE
+ FieldOffsetX 1 - FieldHeight SpriteHeight * FieldOffsetY + 1 + FieldWidth SpriteWidth * 3 + WHITE HLINE
+
+ FieldOffsetX 2 - FieldOffsetY 2 - FieldHeight SpriteHeight * 4 + WHITE VLINE
+ FieldOffsetX 1 - FieldOffsetY 1 - FieldHeight SpriteHeight * 2 + WHITE VLINE
+
+ FieldWidth SpriteWidth * FieldOffsetX + 2 + FieldOffsetY 2 - FieldHeight SpriteHeight * 4 + WHITE VLINE
+ FieldWidth SpriteWidth * FieldOffsetX + 1 + FieldOffsetY 1 - FieldHeight SpriteHeight * 2 + WHITE VLINE
+;
 
 : DrawField
  FieldHeight 0 DO
@@ -68,6 +86,7 @@ CREATE Sprites[] TilesCount CELLS ALLOT
    SHOW-BMP
   LOOP
  LOOP
+ DrawBorder
 ;
 
 : Test
@@ -78,4 +97,41 @@ CREATE Sprites[] TilesCount CELLS ALLOT
  LOOP
  DROP
  DrawField
+;
+
+: StartFillingGameField GameField[] ;
+: EndFillingGameField DROP ;
+: Field, // index str --> index+fieldWidth
+ DUP IF // not empty string
+  OVER // index str index
+  BEGIN
+   OVER C@ " A" C@ - OVER C!
+   1+ SWAP 1+ SWAP
+  OVER C@ NOT UNTIL
+  DROP
+ THEN
+ DROP
+ FieldWidth +
+;
+: LevelA
+ StartFillingGameField
+ " AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" Field,
+ " AAAAAAAAAAAAATATAAAAAAAAAAAAAA" Field,
+ " AAAAAAAAAAAAATRTAAAAAAAAAAAAAA" Field,
+ " AAAAAAAAAAAAATRTAAAAAAAAAAAAAA" Field,
+ " AAAAAAAAAAAAATRTAAAAAAAAAAAAAA" Field,
+ " AAAAAAAAAAAAATRTAAAAAAAAAAAAAA" Field,
+ " AAAAAAAAAAAAATRTAAAAAAAAAAAAAA" Field,
+ " AAAAATTTTTTTTTRTTTTTTTTTAAAAAA" Field,
+ " AAAAAARRRRRRRRRRRRRRRRRAAAAAAA" Field,
+ " AAAAATTTTTTTTTRTTTTTTTTTAAAAAA" Field,
+ " AAAAAAAAAAAAATRTAAAAAAAAAAAAAA" Field,
+ " AAAAAAAAAAAAATRTAAAAAAAAAAAAAA" Field,
+ " AAAAAAAAAAAAATRTAAAAAAAAAAAAAA" Field,
+ " AAAAAAAAAAAAATRTAAAAAAAAAAAAAA" Field,
+ " AAAAAAAAAAAAATRTAAAAAAAAAAAAAA" Field,
+ " AAAAAAAAAAAAATRTAAAAAAAAAAAAAA" Field,
+ " AAAAAAAAAAAAATATAAAAAAAAAAAAAA" Field,
+ " AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" Field,
+ EndFillingGameField
 ;
