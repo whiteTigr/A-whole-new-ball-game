@@ -25,6 +25,7 @@
 
 
 : SHOW-BMP // ADR, X, Y --
+ 1- // wt: fixing mini bug
   2 PICK 0x16 + @ 0 DO
     2 PICK 0x12 + @ 0 DO
       2 PICK 0x12 + @ BEGIN DUP 4 MOD WHILE 1+ REPEAT J * I + 3 * 
