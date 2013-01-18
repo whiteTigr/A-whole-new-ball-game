@@ -1,5 +1,34 @@
 " bmp.fpm" L
 
+" kernel32.dll" LOADLIBRARY
+DUP  " Sleep" GETPROCADDRESS CONSTANT SLEEP
+     " GetTickCount" GETPROCADDRESS CONSTANT GetTickCount
+
+VARIABLE RND
+
+: RANDOMIZE GetTickCount RND ! ;
+RANDOMIZE
+
+: SGN \ ( u -- -1 | 0 | 1 )
+DUP 0 = IF ELSE
+DUP 0 MAX 0 = IF DROP -1 ELSE
+DROP 1 THEN THEN ;
+
+: NEGATE \ ( x -- -x )
+0 SWAP - ;
+
+: ABS \ ( x -- u )
+DUP SGN -1 = IF NEGATE THEN ;
+
+
+: RANDOM \  ( -- u )
+RND @ 69069 * 31415 + 278720333 MOD DUP RND ! ;
+
+: CHOOSE  \ ( u1 -- u2 )
+   278720333 SWAP /
+   RANDOM ABS SWAP /
+;
+
 50 CONSTANT FieldOffsetX
 50 CONSTANT FieldOffsetY
 
@@ -17,12 +46,11 @@ FieldHeight SpriteHeight * CONSTANT FieldPixelHeight
 CREATE GameField[] FieldSize ALLOT
 0 GameField[] FieldSize FILL
 
-
-
 VARIABLE BallX
 VARIABLE BallY
 VARIABLE BallDX
 VARIABLE BallDY
+VARIABLE BallSpeed
 
 VARIABLE NewBallX
 VARIABLE NewBallY
@@ -31,6 +59,8 @@ VARIABLE BallTileX
 VARIABLE BallTileY
 VARIABLE NewBallTileX
 VARIABLE NewBallTileY
+
+VARIABLE JumpsCount
 
 VARIABLE EnergyLeft
 
@@ -172,6 +202,7 @@ EndSpriteLoading
   BEGIN
    OVER C@ " A" C@ - // index str index tile
    DUP TileEnergy = IF EnergyLeft @ 1+ EnergyLeft ! THEN
+   DUP TileJump = IF JumpsCount @ 1+ JumpsCount ! THEN
    OVER C!
    1+ SWAP 1+ SWAP
   OVER C@ NOT UNTIL
@@ -183,12 +214,12 @@ EndSpriteLoading
 
 : LevelA
  StartFillingGameField
- " AABAAAAAAAAAAABAAAAAAAAAAAAAAA" Field,
- " AABBAAAAAAAAATATAAAAAAAAAAAAAA" Field,
- " AAABBAAAAAAAATRTAAAAAAAAAAAAAA" Field,
- " AAAABBAAAAAAATRTAAAAAAAAAAAAAA" Field,
- " AAAAABBAAAAAATRTAAAAAAAAAAAAAA" Field,
- " AAAAAABBAAAAATRTAAAAAAAAAAAAAA" Field,
+ " AAAAAAAAAAAAAABAAAAAAAAAAAAAAA" Field,
+ " AAAAAAAAAAAAATATAAAAAAAAAAAAAA" Field,
+ " AAAAAAAAAAAAATRTAAAAAAAAAAAAAA" Field,
+ " AAAAAAAAAAAAATRTAAAAAAAAAAAAAA" Field,
+ " AAAAAAAAAAAAATRTAAAAAAAAAAAAAA" Field,
+ " AAAAAAAAAAAAATRTAAAAAAAAAAAAAA" Field,
  " AAAAAAAAAAAAATRTAAAAAAAAAAAAAA" Field,
  " AAAAATTTTTTTTTRTTTTTTTTTAAAAAA" Field,
  " CAAAAARRRRRRRRRRRRRRRRRAAAAAAA" Field,
@@ -206,13 +237,36 @@ EndSpriteLoading
 
 : LevelTest
  StartFillingGameField
- " BBAAAAAAAAAAAAAAAACCAAAAAAAAAA" Field,
- " ABBAAAAAACBAAAAAACCAAAAAAAAAAA" Field,
- " AABBAAAACCBBAAAACCAAAAAAAAAAAA" Field,
- " AAABBAACCAABBAACCAAAAAAAAAAAAA" Field,
- " AAAABBCCAAAABBCCAAAAAAAAAAAAAA" Field,
- " AAAAABCAAAAAABCAAAAAAAAAAAAAAA" Field,
+ " AOOKKBAAAAAAAAAAAAAAAAAAAAAAAA" Field,
+ " AAAAAPAAAAAAAAAAAAAAAAAAAAAAAA" Field,
+ " AAHAPCAEBAAAAAAAAAAAAAAAAAAAAA" Field,
+ " AAGAPAACAAAAAAAAAAAAAAAAAAAAAA" Field,
+ " AAAAAAAADAAHAAAAAAAAAAAAAAAAAA" Field,
  " AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" Field,
+ " AAAAAAAAHAAIAAAAAAAAAAAAAAAAAA" Field,
+ " AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" Field,
+ " AAAAAAAAGAAFAAAAAAAAAAAAAAAAAA" Field,
+ " AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" Field,
+ " AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" Field,
+ " AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" Field,
+ " AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" Field,
+ " AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" Field,
+ " AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" Field,
+ " AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" Field,
+ " AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" Field,
+ " AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" Field,
+ EndFillingGameField
+;
+
+: LevelTestRandom
+ StartFillingGameField
+ " CMRBRMTAAAAAAAAAAAAAAAAAAAAAAA" Field,
+ " MRRRMRTAAAAAAAAAAAAAAAAAAAAAAA" Field,
+ " RRRMRRTAAAAAAAAAAAAAAAAAAAAAAA" Field,
+ " RRMRRRTAAAAAAAAAAAAAAAAAAAAAAA" Field,
+ " RMRRRMTAAAAAAAAAAAAAAAAAAAAAAA" Field,
+ " MRBRMCTAAAAAAAAAAAAAAAAAAAAAAA" Field,
+ " TTTTTTTAAAAAAAAAAAAAAAAAAAAAAA" Field,
  " AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" Field,
  " AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" Field,
  " AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" Field,
@@ -227,23 +281,71 @@ EndSpriteLoading
  EndFillingGameField
 ;
 
+: LevelTestRandom2
+ StartFillingGameField
+ FieldHeight 0 DO
+  FieldWidth 0 DO
+   I J + 2 MOD IF TileEnergy EnergyLeft @ 1+ EnergyLeft ! ELSE TileGoRandom THEN
+   GameField[] IJ + C!
+  LOOP
+ LOOP
+ EndFillingGameField
+;
+
+: SetBallPos // x y -->
+ DUP BallY !
+ SHR SHR SHR SHR BallTileY !
+
+ DUP BallX !
+ SHR SHR SHR SHR BallTileX ! 
+;
+
+: SetNewBallPos // x y -->
+ DUP NewBallY !
+ SHR SHR SHR SHR NewBallTileY !
+
+ DUP NewBallX !
+ SHR SHR SHR SHR NewBallTileX !
+;
+
+: GoRandom
+ 4 CHOOSE CASE
+  0 OF  0 -1 BREAK
+  1 OF  1  0 BREAK
+  2 OF  0  1 BREAK
+  3 OF -1  0 BREAK
+ ENDCASE
+ BallDY ! BallDX !
+;
+
 : CenterOfTileActions
  NewBallTileX @ NewBallTileY @ GetTile // tileType
 
- DUP TileLeftSlashRemovable = OVER TileLeftSlash = OR IF
-  BallDX @ BallDY @ BallDX ! BallDY !
- THEN 
+ CASE  
+  TileLeftSlashRemovable  OF BallDX @ BallDY @ BallDX ! BallDY ! BREAK
+  TileLeftSlash           OF BallDX @ BallDY @ BallDX ! BallDY ! BREAK
+  TileRightSlashRemovable OF BallDX @ BallDY @ NEGATE BallDX ! NEGATE BallDY ! BREAK
+  TileRightSlash          OF BallDX @ BallDY @ NEGATE BallDX ! NEGATE BallDY ! BREAK
+  TileGoBack  OF BallDX @ NEGATE BallDX ! BallDY @ NEGATE BallDY ! BREAK
+  TileGoRight OF  1 BallDX !  0 BallDY ! BREAK
+  TileGoDown  OF  0 BallDX !  1 BallDY ! BREAK
+  TileGoLeft  OF -1 BallDX !  0 BallDY ! BREAK
+  TileGoUp    OF  0 BallDX ! -1 BallDY ! BREAK
+  TileGoRandom OF GoRandom BREAK
+  TileJump OF BREAK
 
- DUP TileRightSlashRemovable = OVER TileRightSlash = OR IF
-  BallDX @ BallDY @ NEGATE BallDX ! NEGATE BallDY !
- THEN 
+  TileSpeedUp  OF BallSpeed @ SHL DUP 4 > IF DROP 4 THEN BallSpeed ! BREAK
+  TileSlowDown OF BallSpeed @ SHR DUP 1 < IF DROP 1 THEN BallSpeed ! BREAK
 
- DUP TileEnergy = IF
-  TileSpace BallTileX @ BallTileY @ SetTile
-  EnergyLeft @ 1 - EnergyLeft !
- THEN
+  TileGrass OF
+   TileSpace BallTileX @ BallTileY @ SetTile
+   BREAK
 
- DROP
+  TileEnergy OF
+   TileSpace BallTileX @ BallTileY @ SetTile
+   EnergyLeft @ 1 - EnergyLeft !
+   BREAK
+ ENDCASE  
 ;
 
 CREATE TilesPassed[] FieldSize ALLOT
@@ -288,59 +390,55 @@ CREATE TilesPassed[] FieldSize ALLOT
  THEN
 ;
 
+: CheckCollisionWithWall
+ NewBallX @ 15 AND 15 = IF // enterign left tile
+  NewBallTileX @ NewBallTileY @ GetTile TileWall = IF
+   1 BallDX !
+   NewBallX @ 2 + NewBallX !
+   EXIT
+  THEN
+ THEN
+
+ NewBallX @ 15 AND 13 = IF // entering right tile
+  NewBallTileX @ 1+ NewBallTileY @ GetTile TileWall = IF
+   -1 BallDX !
+   NewBallX @ 2 - NewBallX !
+   EXIT
+  THEN
+ THEN
+
+ NewBallY @ 15 AND 15 = IF // entering top tile
+  NewBallTileX @ NewBallTileY @ GetTile TileWall = IF
+   1 BallDY !
+   NewBallY @ 2 + NewBallY !
+   EXIT
+  THEN
+ THEN
+
+ NewBallY @ 15 AND 13 = IF // enterign bottom tile
+  NewBallTileX @ NewBallTileY @ 1+ GetTile TileWall = IF
+   -1 BallDY !
+   NewBallY @ 2 - NewBallY !
+   EXIT
+  THEN
+ THEN 
+;
+
 : BallInTileCenter? // --> 0|-1
  NewBallX @ 15 AND 6 =
  NewBallY @ 15 AND 6 = AND
 ;
 
 : GameStep
- BallX @ BallDX @ + 
-  DUP NewBallX !
-  SHR SHR SHR SHR NewBallTileX !
+ BallX @ BallDX @ + BallY @ BallDY @ + SetNewBallPos
 
- BallY @ BallDY @ + 
-  DUP NewBallY !
-  SHR SHR SHR SHR NewBallTileY !
-
- NewBallX @ 15 AND 15 = IF
-  NewBallTileX @ NewBallTileY @ GetTile TileWall = IF
-   1 BallDX !
-   NewBallX @ 2 + NewBallX !
-  THEN
- THEN
-
- NewBallX @ 15 AND 13 = IF
-  NewBallTileX @ 1+ NewBallTileY @ GetTile TileWall = IF
-   -1 BallDX !
-   NewBallX @ 2 - NewBallX !
-  THEN
- THEN
-
- NewBallY @ 15 AND 15 = IF
-  NewBallTileX @ NewBallTileY @ GetTile TileWall = IF
-   1 BallDY !
-   NewBallY @ 2 + NewBallY !
-  THEN
- THEN
-
- NewBallY @ 15 AND 13 = IF
-  NewBallTileX @ NewBallTileY @ 1+ GetTile TileWall = IF
-   -1 BallDY !
-   NewBallY @ 2 - NewBallY !
-  THEN
- THEN
+ CheckCollisionWithWall
 
  BallInTileCenter? IF
   CenterOfTileActions
  THEN
 
- NewBallX @ 
-  DUP BallX !
-  SHR SHR SHR SHR BallTileX !
-
- NewBallY @ 
-  DUP BallY !
-  SHR SHR SHR SHR BallTileY !
+ NewBallX @ NewBallY @ SetBallPos
 
  BallTileX @ BallTileY @ TilePassed
  BallX @ 3 + SHR SHR SHR SHR BallTileY @ TilePassed
@@ -354,7 +452,8 @@ CREATE TilesPassed[] FieldSize ALLOT
  0 BallTileY !
  1 BallDX !
  0 BallDY !
- LevelTest
+ 2 BallSpeed !
+ LevelA
 ;
 
 : Test
@@ -363,14 +462,16 @@ CREATE TilesPassed[] FieldSize ALLOT
  BEGIN
   ClearPassedTiles
   BallTileX @ BallTileY @ TilePassed
-  2 0 DO
+  BallX @ 3 + SHR SHR SHR SHR BallTileY @ TilePassed
+  BallTileX @ BallY @ 3 + SHR SHR SHR SHR TilePassed
+  BallSpeed @ 0 DO
    GameStep
   LOOP
   RedrawPassedTiles
   DrawBall
   0 0 GOTOXY
-  " DEPTH = " PRINT DEPTH . CR
-  " ENERGY LEFT = " PRINT EnergyLeft @ . 
+  " DEPTH = " PRINT // DEPTH . CR
+  " ENERGY LEFT = " PRINT // EnergyLeft @ . 
   $
  AGAIN
 ;
