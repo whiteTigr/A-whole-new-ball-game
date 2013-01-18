@@ -44,7 +44,7 @@ FieldWidth SpriteWidth * CONSTANT FieldPixelWidth
 FieldHeight SpriteHeight * CONSTANT FieldPixelHeight
 
 CREATE GameField[] FieldSize ALLOT
-0 GameField[] FieldSize FILL
+0 GameField[] FieldSize CFILL
 
 VARIABLE BallX
 VARIABLE BallY
@@ -260,24 +260,24 @@ EndSpriteLoading
 
 : LevelTestRandom
  StartFillingGameField
- " CMRBRMTAAAAAAAAAAAAAAAAAAAAAAA" Field,
- " MRRRMRTAAAAAAAAAAAAAAAAAAAAAAA" Field,
- " RRRMRRTAAAAAAAAAAAAAAAAAAAAAAA" Field,
- " RRMRRRTAAAAAAAAAAAAAAAAAAAAAAA" Field,
- " RMRRRMTAAAAAAAAAAAAAAAAAAAAAAA" Field,
- " MRBRMCTAAAAAAAAAAAAAAAAAAAAAAA" Field,
- " TTTTTTTAAAAAAAAAAAAAAAAAAAAAAA" Field,
+ " AAHAATAAAAAAAAAAAAAAAAAATAAAAA" Field,
+ " AAAAATAAAAAAAAAAAAAAAAAATAAAAA" Field,
+ " AANAATAAAAAAAAAAAAAAAAAATAANAA" Field,
+ " AAAAATAAAAAAAAAAAAAAAAAATAAAAA" Field,
+ " AAAAATAAAAAAAAAAAAAAAAAATAAAAA" Field,
+ " TTTTTTAAAAAAAAAAAAAAAAAATTTTTT" Field,
  " AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" Field,
  " AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" Field,
  " AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" Field,
  " AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" Field,
  " AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" Field,
  " AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" Field,
- " AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" Field,
- " AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" Field,
- " AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" Field,
- " AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" Field,
- " AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" Field,
+ " TTTTTTAAAAAAAAAAAAAAAAAATTTTTT" Field,
+ " AAAAATAAAAAAAAAAAAAAAAAATAAAAA" Field,
+ " AAAAATAAAAAAAAAAAAAAAAAATAAAAA" Field,
+ " AANAATAAAAAAAAAAAAAAAAAATAANAA" Field,
+ " AAAAATAAAAAAAAAAAAAAAAAATAAAAA" Field,
+ " AAAAATAAAAAAAAAAAAAAAAAATAAAAA" Field,
  EndFillingGameField
 ;
 
@@ -318,6 +318,34 @@ EndSpriteLoading
  BallDY ! BallDX !
 ;
 
+: FindJump // JumpNumber --> x y
+ GameField[] 1-
+ BEGIN
+  BEGIN
+   1+
+  DUP C@ TileJump = UNTIL
+  OVER NOT IF 
+   NIP // addr
+   GameField[] - // fieldIndex
+   " I " PRINT DUP .
+   DUP FieldWidth MOD
+   SWAP FieldWidth /
+   EXIT
+  ELSE
+   SWAP 1- SWAP
+  THEN
+ AGAIN
+;
+
+: GoJump
+ JumpsCount @ CHOOSE 
+  0 2 GOTOXY " J " PRINT DUP . $
+ FindJump // x y
+  " X " PRINT OVER . " Y " PRINT DUP . $
+ SpriteHeight * 6 + SWAP SpriteWidth * 6 + SWAP SetNewBallPos
+ GoRandom 
+;
+
 : CenterOfTileActions
  NewBallTileX @ NewBallTileY @ GetTile // tileType
 
@@ -332,7 +360,7 @@ EndSpriteLoading
   TileGoLeft  OF -1 BallDX !  0 BallDY ! BREAK
   TileGoUp    OF  0 BallDX ! -1 BallDY ! BREAK
   TileGoRandom OF GoRandom BREAK
-  TileJump OF BREAK
+  TileJump OF GoJump BREAK
 
   TileSpeedUp  OF BallSpeed @ SHL DUP 4 > IF DROP 4 THEN BallSpeed ! BREAK
   TileSlowDown OF BallSpeed @ SHR DUP 1 < IF DROP 1 THEN BallSpeed ! BREAK
@@ -350,7 +378,7 @@ EndSpriteLoading
 
 CREATE TilesPassed[] FieldSize ALLOT
 : ClearPassedTiles
- 0 TilesPassed[] FieldSize FILL
+ 0 TilesPassed[] FieldSize CFILL
 ;
 : TilePassed // x y -->
  TileIndex TilesPassed[] + 1 SWAP C!
@@ -446,19 +474,18 @@ CREATE TilesPassed[] FieldSize ALLOT
 ;
 
 : StartGame
- 6 BallX !
- 6 BallY !
- 0 BallTileX !
- 0 BallTileY !
+ 6 6 SetBallPos
  1 BallDX !
  0 BallDY !
  2 BallSpeed !
- LevelA
+ LevelTestRandom
 ;
 
 : Test
  StartGame
  DrawGameField
+ 40 0 GOTOXY
+ " Jumps = " PRINT JumpsCount @ .
  BEGIN
   ClearPassedTiles
   BallTileX @ BallTileY @ TilePassed
@@ -470,8 +497,8 @@ CREATE TilesPassed[] FieldSize ALLOT
   RedrawPassedTiles
   DrawBall
   0 0 GOTOXY
-  " DEPTH = " PRINT // DEPTH . CR
-  " ENERGY LEFT = " PRINT // EnergyLeft @ . 
+  " DEPTH = " PRINT DEPTH . CR
+  " ENERGY LEFT = " PRINT EnergyLeft @ . 
   $
  AGAIN
 ;
